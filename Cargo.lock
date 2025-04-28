@@ -187,24 +187,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix_simple_auth_jwt"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "bcrypt",
- "chrono",
- "dotenv",
- "hex",
- "jsonwebtoken",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "sqlx",
- "time 0.2.27",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -623,6 +605,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.98",
+]
+
+[[package]]
+name = "docker-env"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6831be357a261470db6090a0228bdd598d6fde4a3b0f35f94f3a40aa50190f83"
+dependencies = [
+ "dotenv",
+ "tracing",
 ]
 
 [[package]]
@@ -1720,6 +1712,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60946a68e5f9d28b0dc1c21bb8a97ee7d018a8b322fa57838ba31cc878e22d99"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "proxy-server"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "bcrypt",
+ "chrono",
+ "docker-env",
+ "dotenv",
+ "hex",
+ "jsonwebtoken",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "time 0.2.27",
 ]
 
 [[package]]

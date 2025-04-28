@@ -4,7 +4,6 @@ use actix_web::{
     get, post, web, App, HttpRequest, HttpResponse, HttpServer
 };
 use chrono::{DateTime, Utc};
-use dotenv::dotenv;
 use regex::Regex;
 use reqwest::{header::CONTENT_TYPE, Client};
 use serde::{Deserialize, Serialize};
@@ -144,8 +143,7 @@ async fn post_telegram_chip(data: String, client_id: &str, owner: &str) {
 }
 
 async fn create_pool() -> MySqlPool {
-    dotenv().ok();
-    let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL harus di set");
+    let database_url: String = String::from("mysql://leon:Dominskuy123!@202.70.133.108:3306/datatest");
     let pool = MySqlPoolOptions::new()
         .max_connections(10)
         .connect(&database_url)
@@ -250,7 +248,7 @@ async fn data_handler(
             if id_game_regex.is_match(&body.to_string()) {
                 // insert id_game
                 let _result_id_game = sqlx::query("INSERT INTO id_game (data, client_id, createdAt) 
-                    VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE data = VALUES(data)")
+                    VALUES (?, ?, NOW())")
                     .bind(&body)
                     .bind(&client_id)
                     .execute(pool.as_ref())
@@ -262,7 +260,7 @@ async fn data_handler(
         3 => {
             // insert mac
             let _result = sqlx::query("INSERT INTO mac (data, client_id, createdAt) 
-                VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE data = VALUES(data)")
+                VALUES (?, ?, NOW())")
                 .bind(body)
                 .bind(&client_id)
                 .execute(pool.as_ref())
