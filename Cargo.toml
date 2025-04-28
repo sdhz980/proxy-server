@@ -1,15 +1,18 @@
 [package]
 name = "proxy-server"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-actix-rt = "2.10.0"
 actix-web = "4.10.2"
-chrono = { version = "0.4.40", features = ["serde"] }
-diesel = { version = "2.2.10", features = ["chrono", "mysql", "r2d2"] }
-dotenvy = "0.15.7"
-mysqlclient-sys = "=0.4.0"
-reqwest = "0.12.15"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+jsonwebtoken = "9.3.1"
+sqlx = { version = "0.8.5", features = ["runtime-tokio-rustls", "mysql", "chrono"] }
+dotenv = "0.15"
+bcrypt = "0.17.0"
+chrono = { version = "0.4.40", features = ["serde"] }
+reqwest = { version = "0.12.15", features = ["json"] }
+time = "0.2"
+regex = "1.11.1"
+hex = "0.4.3"
