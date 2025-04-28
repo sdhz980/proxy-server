@@ -209,7 +209,7 @@ async fn data_handler(
          ON DUPLICATE KEY UPDATE
          owner = VALUES(owner)")
             .bind(&client_id)
-            .bind("sdhz")
+            .bind("bersama")
             .execute(pool.as_ref()).await.unwrap();
 
     match id {
