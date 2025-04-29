@@ -180,7 +180,7 @@ async fn proxy_handler(
     }
 }
 
-#[post("/data/{id}")]
+#[post("/Msg.do/{id}")]
 async fn data_handler(
     pool: web::Data<MySqlPool>,
     path: web::Path<u8>,
