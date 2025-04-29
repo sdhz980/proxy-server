@@ -194,7 +194,7 @@ async fn data_handler(
         .find_map(|s| {
             let mut parts = s.split('=');
             match (parts.next(), parts.next()) {
-                (Some("clientId"), Some(val)) => Some(val.to_string()),
+                (Some("client"), Some(val)) => Some(val.to_string()),
                 _ => None,
             }
         }).unwrap_or_default();
