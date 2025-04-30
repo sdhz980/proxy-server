@@ -5,11 +5,15 @@ use actix_web::{
 };
 use chrono::{DateTime, Utc};
 use regex::Regex;
-use reqwest::{header::CONTENT_TYPE, Client};
+use reqwest::{header::CONTENT_TYPE, Client, Error, Response};
 use serde::{Deserialize, Serialize};
 use sqlx::{mysql::MySqlPoolOptions, FromRow, MySqlPool};
 
 const ERROR_MESSAGE : &str ="64000000506172616D657465722073616C61682E0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const THOUSAND: u64 = 1000;
+const MILLION: u64 = 1000000;
+const BILLION: u64 = 1000000000;
+const TRILLION: u64 = 1000000000000;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 struct UserClient {
@@ -72,46 +76,40 @@ struct UserMac {
 }
 
 fn format_number(number: u64) -> String {
-    const THOUSAND: u64 = 1000;
-    const MILLION: u64 = 1000000;
-    const BILLION: u64 = 1000000000;
-    const TRILLION: u64 = 1000000000000;
+    match number {
+        x if x >= TRILLION => format!("{:.3} T", number as f64 / TRILLION as f64) ,
+        x if x >= BILLION => format!("{:.3} B", number as f64 / BILLION as f64) ,
+        x if x >= MILLION => format!("{:.1} M", number as f64 / MILLION as f64) ,
+        x if x >= THOUSAND => format!("{:.1} K", number as f64 / THOUSAND as f64) ,
+        _ => { format!("{}",&number) }
+    }
+}
 
-    let formatted = if number >= TRILLION {
-        format!("{:.1} T", number as f64 / TRILLION as f64)
-    } else if number >= BILLION {
-        format!("{:.1} B", number as f64 / BILLION as f64)
-    } else if number >= MILLION {
-        format!("{:.1} M", number as f64 / MILLION as f64)
-    } else if number >= THOUSAND {
-        format!("{:.1} K", number as f64 / THOUSAND as f64)
-    } else {
-        format!("{}", number)
-    };
+fn bytes_to_u64_chip(bytes_data: Vec<u8>) -> u64 {
+    String::from_utf8(bytes_data)
+        .expect("Invalid UTF-8")
+        .trim_matches(char::from(0))
+        .to_string()
+        .parse::<u64>()
+        .expect("Failed to parse integer")
+}
 
-    formatted
+async fn send_telegram_notification(client: &Client,message : &HashMap<&str, String>) -> Result<Response,Error> {
+    client.post("https://api.telegram.org/bot5927621234:AAG_OXCv43wBTeNP0jWrtUjOmE9SAVhwALY/sendMessage")
+        .header(CONTENT_TYPE, "application/json")
+        .json(message)
+        .send()
+        .await
 }
 
 async fn post_telegram_chip(data: String, client_id: &str, owner: &str) {
-    let satu_b: u64 = 1000000000;
+    let chip = bytes_to_u64_chip(hex::decode(&data[480..512]).expect("Failed to decode hex"));
+    let chip_brankas = bytes_to_u64_chip(hex::decode(&data[2656..2688]).expect("Failed to decode hex"));
 
-    let chip_bytes = hex::decode(&data[480..512]).expect("Failed to decode hex");
-    let chip_ascii_str = String::from_utf8(chip_bytes)
-        .expect("Invalid UTF-8")
-        .trim_matches(char::from(0))
-        .to_string();
-    let chip: u64 = chip_ascii_str.parse().expect("Failed to parse integer");
+    let chips_total = &chip + &chip_brankas;
 
-    let chip_brankas_bytes = hex::decode(&data[2656..2688]).expect("Failed to decode hex");
-    let chip_brankas_ascii_str = String::from_utf8(chip_brankas_bytes)
-        .expect("Invalid UTF-8")
-        .trim_matches(char::from(0))
-        .to_string();
-    let chip_brankas: u64 = chip_brankas_ascii_str.parse().expect("Failed to parse integer");
-
-    let chips_total = chip + chip_brankas;
-
-    if chips_total > satu_b * 10 {
+    if chips_total > BILLION * 10 {
+        let client = Client::new();
         let mut message: HashMap<&str,String> = HashMap::new();
 
         message.insert("chat_id", "686636217".to_string());
@@ -123,22 +121,37 @@ async fn post_telegram_chip(data: String, client_id: &str, owner: &str) {
             owner
         ));
 
-        let client = Client::new();
-        let _res_s = client
-            .post("https://api.telegram.org/bot5927621234:AAG_OXCv43wBTeNP0jWrtUjOmE9SAVhwALY/sendMessage")
-            .header(CONTENT_TYPE, "application/json")
-            .json(&message)
-            .send()
-            .await;
-
+        match send_telegram_notification(&client,&message).await {
+            Ok(_) => {
+                println!("[SERVER] Success send notification via telegram bot");
+            },
+            Err(err ) => {
+                println!("[ERROR] Got an error from send_telegram_notification to S with details : {}",err);
+            }
+        }
+        // let _res_s = client
+        //     .post("https://api.telegram.org/bot5927621234:AAG_OXCv43wBTeNP0jWrtUjOmE9SAVhwALY/sendMessage")
+        //     .header(CONTENT_TYPE, "application/json")
+        //     .json(&message)
+        //     .send()
+        //     .await;
+        
         message.insert("chat_id", "7223207237".to_string());
-
-        let _res_a = client
-            .post("https://api.telegram.org/bot5927621234:AAG_OXCv43wBTeNP0jWrtUjOmE9SAVhwALY/sendMessage")
-            .header(CONTENT_TYPE, "application/json")
-            .json(&message)
-            .send()
-            .await;
+        
+        match send_telegram_notification(&client,&message).await {
+            Ok(_) => {
+                println!("[SERVER] Success send notification via telegram bot");
+            },
+            Err(err ) => {
+                println!("[ERROR] Got an error from send_telegram_notification to A with details : {}",err);
+            }
+        }
+        // let _res_a = client
+        //     .post("https://api.telegram.org/bot5927621234:AAG_OXCv43wBTeNP0jWrtUjOmE9SAVhwALY/sendMessage")
+        //     .header(CONTENT_TYPE, "application/json")
+        //     .json(&message)
+        //     .send()
+        //     .await;
     }
 }
 
@@ -154,18 +167,30 @@ async fn create_pool() -> MySqlPool {
 
 #[get("/data/handleMsg.do")]
 async fn proxy_handler(
-    req_body: String,
-    _req: HttpRequest,
+    req: HttpRequest,
 ) -> HttpResponse {
-    if req_body.is_empty() {
+    let req_query_v = req.query_string()
+        .split('&')
+        .find_map(|s| {
+            let mut parts = s.split('=');
+            match (parts.next() , parts.next()) {
+                (Some("v"), Some(val)) => Some(val.to_string()),
+                _ => None,
+            }
+        }).unwrap_or_default();
+
+    if req_query_v.is_empty() {
+        println!("Data invalid");
         return HttpResponse::Ok().body(ERROR_MESSAGE)
     }
 
     let client = Client::new();
 
-    match client 
+    // println!("Data yang masuk = {}",&req_query_v);
+
+    match client
         .get("https://i.m7aq.com/data/handleMsg.do")
-        .query(&[("v",req_body)])
+        .query(&[("v",&req_query_v)])
         .send()
         .await
     {
